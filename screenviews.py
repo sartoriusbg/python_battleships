@@ -1,6 +1,7 @@
 import pygame
 import button
 import textbox
+import picture
 
 # def main_menu():
 #     print("in main")
@@ -42,11 +43,12 @@ import textbox
 
 class View:
 
-    def __init__(self, screen : pygame.Surface, background : pygame.Surface, buttons: list[button.Button], text_boxes : list[textbox.Text]):
+    def __init__(self, screen : pygame.Surface, background : pygame.Surface, buttons: list[button.Button], text_boxes : list[textbox.Text], pictures : list[picture.Picture] = []):
         self.screen = screen
         self.background = background
         self.buttons = buttons
         self.text_boxes = text_boxes
+        self.pictures = pictures
     
     def run(self):
         running = True
@@ -57,6 +59,8 @@ class View:
                 text_box.show()
             for button in self.buttons:
                 button.show()
+            for picture in self.pictures:
+                picture.show()
             pygame.display.update()
             for event in pygame.event.get():
                 if not running:
@@ -68,7 +72,7 @@ class View:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     for button in self.buttons:
                         if button.checkForInput(pygame.mouse.get_pos()):
-                            button.action()
+                            button.exec_action()
                             running = False
                             break  
             

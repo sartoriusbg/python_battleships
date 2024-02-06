@@ -7,8 +7,12 @@ button_font = pygame.font.SysFont("freesansbold.ttf", 35)
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 button_surface = pygame.image.load("button.webp")
 button_surface = pygame.transform.scale(button_surface, (200, 50))
+button_cell_surface = pygame.image.load("cell.png")
+button_cell_surface = pygame.transform.scale(button_cell_surface, (30, 30))
+button_selected_cell_surface = pygame.image.load("selected_cell.png")
+button_selected_cell_surface = pygame.transform.scale(button_selected_cell_surface, (30, 30))
 class Button():
-	def __init__(self, image, x_pos, y_pos, text_input):
+	def __init__(self, image, x_pos, y_pos, text_input = ""):
 		self.image = image
 		self.x_pos = x_pos
 		self.y_pos = y_pos
@@ -21,9 +25,13 @@ class Button():
 		screen.blit(self.image, self.rect)
 		screen.blit(self.text, self.text_rect)
 	
-	def set_action(self, action):
+	def set_action(self, action, parameters = []):
 		self.action = action
+		self.parameters = parameters
 		return self
+	
+	def exec_action(self):
+		self.action(*self.parameters)
 	
 	def checkForInput(self, position):
 		return position[0] in range(self.rect.left, self.rect.right) and position[1] in range(self.rect.top, self.rect.bottom)
@@ -38,3 +46,6 @@ class Button():
 	def show(self):
 		self.update()
 		self.changeColor(pygame.mouse.get_pos())
+
+	def __eq__(self, other):
+		return self.x_pos == other.x_pos and self.y_pos == other.y_pos
