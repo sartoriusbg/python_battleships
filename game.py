@@ -5,6 +5,7 @@ import tkinter.filedialog
 import screenviews
 import textbox
 import picture
+import textinput
 
 GAME_SIZE = 10
 
@@ -28,6 +29,8 @@ button_place_manually = button.Button(button.button_surface, 400, 250, "Manually
 button_back_to_place_ships = button.Button(button.button_surface, 700, 400, "Back")
 button_reset_board = button.Button(button.button_surface, 500, 400, "Reset Board")
 button_confirm_board = button.Button(button.button_surface, 600, 460, "Confirm")
+button_confirm_your_ip = button.Button(button.button_surface, 400, 350, "Confirm")
+button_confirm_opponent_ip = button.Button(button.button_surface, 400, 350, "Confirm")
 
 def prompt_file():
     """Create a Tk file dialog and cleanup when finished"""
@@ -82,8 +85,8 @@ def choose_ships(select : button.Button, cells, selectors):
             break
         index += 1
     col = index % 6
-    print(index)
-    print(col)
+    #print(index)
+    #print(col)
     while col < len(selectors):
         if col != index:
             selectors[col].image = button.button_cell_surface
@@ -107,7 +110,7 @@ def generate_ship_selection():
 def reset_board(selectors):
     place_ships_manually([], selectors)
 
-def place_ships_manually(cells : list[button.Button] = [], selectors : list[button.Button] = []):
+def place_ships_manually(type = "solo", cells : list[button.Button] = [], selectors : list[button.Button] = []):
     if not cells:
         cells = generate_cells()
     if not selectors:
@@ -117,7 +120,7 @@ def place_ships_manually(cells : list[button.Button] = [], selectors : list[butt
     for selector in selectors:
         selector.set_action(choose_ships, [selector, cells, selectors])
     buttons = list(cells)
-    print(len(selectors))
+    #print(len(selectors))
     buttons.append(button_back_to_place_ships)
     buttons.append(button_reset_board)
     buttons.append(button_confirm_board)
@@ -135,14 +138,35 @@ def place_ships_manually(cells : list[button.Button] = [], selectors : list[butt
     place_ships_manually_view = screenviews.View(screen, background, buttons, [place_ships_manually_text, text_promp, text_ship, text_zero, text_one, text_two, text_three, text_four])
     place_ships_manually_view.run()
 
+def confirm_player_ip(view):
+    print(view.text_result)
+    multiplayer_other_ip(view.text_result)
+
+def multiplayer_your_ip():
+    main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
+    prompt_text_yours = textbox.Text("Your IP:", "freesansbold.ttf", 35, (400, 150), screen)
+    ip_input = textinput.Text_input('', 'freesansbold.ttf', 35, (400, 250), screen)
+    text_picture = picture.Picture('textinput.webp', (600, 50), (100, 225), screen)
+    multiplayer_view = screenviews.View(screen, background, [button_back_to_main, button_confirm_your_ip], [main_text, prompt_text_yours], [text_picture], ip_input)
+    button_confirm_your_ip.set_action(confirm_player_ip, [multiplayer_view])
+    multiplayer_view.run()
+
+def multiplayer_other_ip(player_ip):
+    print(player_ip)
+    main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
+    prompt_text_yours = textbox.Text("Opponents IP:", "freesansbold.ttf", 35, (400, 150), screen)
+    ip_input = textinput.Text_input('', 'freesansbold.ttf', 35, (400, 250), screen)
+    text_picture = picture.Picture('textinput.webp', (600, 50), (100, 225), screen)
+    multiplayer_view = screenviews.View(screen, background, [button_back_to_main, button_confirm_opponent_ip], [main_text, prompt_text_yours], [text_picture], ip_input)
+    multiplayer_view.run()
+
 def main_menu():
     main_menu_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 100), screen)
     main_menu_view = screenviews.View(screen, background, [button_solo, button_multy, button_quit], [main_menu_text])
     main_menu_view.run()
 
-
 button_solo.set_action(place_ships)
-button_multy.set_action(multy)
+button_multy.set_action(multiplayer_your_ip)
 button_quit.set_action(quit_game)
 button_place_manually.set_action(place_ships_manually)
 button_place_from_file.set_action(prompt_file)
