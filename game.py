@@ -6,6 +6,7 @@ import screenviews
 import textbox
 import picture
 import textinput
+import gamelogic
 
 GAME_SIZE = 10
 
@@ -55,22 +56,33 @@ def multy():
 def quit_game():
     pass
 
-def confirm_board(cells : list[button.Button]):
+def confirm_board(cells : list[button.Button], selectors : list[button.Button]):
     arr = list(map(lambda x : 1 if x.image == button.button_selected_cell_surface else 0, cells))
-    for i in range(10):
-        for j in range(10):
-            index = i * 10 + j
-            print(f"{arr[index]:3}", end=" ")  # Adjust the width as needed for formatting
-    print("confirm")
+    ships = {}
+    for index, select in enumerate(selectors):
+        if select.image == button.button_selected_cell_surface:
+            ships[index % 6 + 1] = index // 6
+    print(ships)
+    board = []
+    for row in range(10):
+        rowlist = []
+        board.append(rowlist)
+        for col in range(10):
+            rowlist.append(arr[row * 10 + col])
+    
+    if gamelogic.validate(board, ships):
+        battle_solo()
+    else:
+        place_ships_manually()
 
 def cell_switch(cell : button.Button, cells, selectors):
     cell.image = button.button_selected_cell_surface if cell.image == button.button_cell_surface else button.button_cell_surface
     place_ships_manually(cells, selectors)
 
-def generate_cells():
+def generate_cells(start_x = 30, start_y = 180):
     cells = []
-    start_x = 30
-    start_y = 180
+    #start_x = 30
+    #start_y = 180
     for row in range(GAME_SIZE):
         for col in range(GAME_SIZE):
             cell = button.Button(button.button_cell_surface, start_x + col * 30, start_y + row * 30)
@@ -91,6 +103,10 @@ def choose_ships(select : button.Button, cells, selectors):
         if col != index:
             selectors[col].image = button.button_cell_surface
         col += 6
+    
+    for mod in range(6):
+        if all(map(lambda x: selectors[x].image == button.button_cell_surface, [x for x in range(30) if x % 6 == mod])):
+            selectors[mod].image = button.button_selected_cell_surface
     place_ships_manually(cells, selectors)
 
 
@@ -101,7 +117,10 @@ def generate_ship_selection():
     start_y = 190
     for row in range(5):
         for col in range(6):
-            select = button.Button(button.button_cell_surface, start_x + col * 70, start_y + row * 40)
+            if(row == 0):
+                select = button.Button(button.button_selected_cell_surface, start_x + col * 70, start_y + row * 40)
+            else:
+                select = button.Button(button.button_cell_surface, start_x + col * 70, start_y + row * 40)
             buttons.append(select)
     return buttons
 
@@ -110,7 +129,7 @@ def generate_ship_selection():
 def reset_board(selectors):
     place_ships_manually([], selectors)
 
-def place_ships_manually(type = "solo", cells : list[button.Button] = [], selectors : list[button.Button] = []):
+def place_ships_manually(cells : list[button.Button] = [], selectors : list[button.Button] = [], type = "solo"):
     if not cells:
         cells = generate_cells()
     if not selectors:
@@ -125,7 +144,8 @@ def place_ships_manually(type = "solo", cells : list[button.Button] = [], select
     buttons.append(button_reset_board)
     buttons.append(button_confirm_board)
     buttons.extend(selectors)
-    button_confirm_board.set_action(confirm_board, [cells])
+    #button_confirm_board.set_action(confirm_board, [cells, selectors])
+    button_confirm_board.set_action(confirm_board, [cells, selectors])
     button_reset_board.set_action(reset_board, [selectors])
     text_promp = textbox.Text("You need to place:", 'freesansbold.ttf', 35, (500, 100), screen)
     text_ship = textbox.Text("x1      x2      x3      x4      x5      x6",  'freesansbold.ttf', 25, (600, 150), screen)
@@ -159,6 +179,16 @@ def multiplayer_other_ip(player_ip):
     text_picture = picture.Picture('textinput.webp', (600, 50), (100, 225), screen)
     multiplayer_view = screenviews.View(screen, background, [button_back_to_main, button_confirm_opponent_ip], [main_text, prompt_text_yours], [text_picture], ip_input)
     multiplayer_view.run()
+
+def battle_solo():#your_board, bot_board):
+    main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
+    buttons = []
+    my_board = generate_cells(500, 180)
+    opponents_board = generate_cells()
+    buttons.extend(my_board)
+    buttons.extend(opponents_board)
+    battle_view = screenviews.View(screen, background, buttons, [main_text])
+    battle_view.run()
 
 def main_menu():
     main_menu_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 100), screen)
