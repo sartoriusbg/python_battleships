@@ -38,7 +38,7 @@ def file_reader(info : str):
     dict_str, list_str = info.split("&&&")
     data_dict = {int(key): value for key, value in json.loads(dict_str).items()}
     data_list = json.loads(list_str)
-    print(data_dict)
+    #print(data_dict)
     if gamelogic.validate(data_list, data_dict):
         game_info = gamelogic.Game_info(data_list)
         battle_solo(game_info, game_info)
@@ -55,7 +55,7 @@ def prompt_file():
             file_contents = file.read()
             file_reader(file_contents)
     top.destroy()
-    print(file_name)
+    #print(file_name)
 
 def debug_print(text):
 	print(text)
@@ -85,14 +85,21 @@ def confirm_board(cells : list[button.Button], selectors : list[button.Button]):
         board.append(rowlist)
         for col in range(10):
             rowlist.append(arr[row * 10 + col])
-    print(board)
-    
-    #info.print_ships()
+    #print(board)
+    #print(gamelogic.validate_adjacency(board))
     if gamelogic.validate(board, ships):
-        info = gamelogic.Game_info(board)
-        print(info.ships_left())
+        b_info = gamelogic.generate_board(ships)
+        p_info = gamelogic.Game_info(board)
+        #print(info.ships_left())
         #info.print_ships()
-        battle_solo(info, info)
+        print("info")
+        print(ships)
+        #b_info = gamelogic.generate_board(ships)
+        #print(board)
+        bot = gamelogic.Bot()
+        print(b_info.board)
+        print("info")
+        battle_solo(p_info, b_info, bot)
     else:
         place_ships_manually()
 
@@ -209,25 +216,47 @@ def generate_int_text(ships : dict, player):
         else:
             texts.append(textbox.Text(ships[size].__str__(), 'freesansbold.ttf', 35, (450, 190 + 50 * (size - 1)), screen))
     return texts
-        
-matrix = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 0, 0, 2, 0, 0, 3, 3, 0, 4],
-    [1, 0, 0, 2, 0, 0, 0, 0, 0, 4],
-    [0, 0, 0, 2, 0, 0, 0, 0, 0, 4],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 4],
-    [0, 0, 0, 0, 0, 0, 0, 5, 0, 0],
-    [6, 6, 6, 6, 6, 0, 0, 5, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 5, 0, 0],
-    [0, 0, 0, 0, 7, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-]
 
-p_board = gamelogic.Game_info(matrix)
-b_board = gamelogic.Game_info(matrix)
+def det_shot(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_info, bot : gamelogic.Bot, first_turn, cell : button.Button, opponent_cells : list[button.Button], player_cells : list[button.Button]):
+    cell.image = button.button_selected_cell_surface
+    shoot(player_board, bot_board, bot, first_turn, opponent_cells, player_cells)
 
-def battle_solo(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_info):#your_board, bot_board):
+def shoot(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_info, bot : gamelogic.Bot, first_turn, opponent_cells : list[button.Button], player_cells : list[button.Button]):
+    for number, cell in enumerate(opponent_cells):
+        if cell.image == button.button_selected_cell_surface:
+            shot = bot_board.shoot((number // GAME_SIZE, number % GAME_SIZE))
+            cell.image = button.button_cell_miss if bot_board.board[number // GAME_SIZE][number % GAME_SIZE] == 0 else button.button_cell_hit
+            if shot.succes:
+                battle_solo(player_board, bot_board, bot, True, opponent_cells, player_cells)
+            else:
+                battle_solo(player_board, bot_board, bot, False, opponent_cells, player_cells)
+
+def battle_solo(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_info, bot : gamelogic.Bot, firs_turn = True, opponent_cells = [], players_cells = []):
+    # if player_board.over() or bot_board.over:
+    #     print("game over")
+    #     return
+    if not opponent_cells:
+        opponent_cells = generate_cells()
+    if not players_cells:
+        players_cells = generate_cells(500, 180)
+    
+    for cell in opponent_cells:
+        cell.set_action(det_shot, [player_board, bot_board, bot, False, cell, opponent_cells, players_cells])
+    for cell in players_cells:
+        cell.set_action(battle_solo, [player_board, bot_board, bot, True, opponent_cells, players_cells])
+    for i in range(GAME_SIZE):
+        for j in range(GAME_SIZE):
+            if player_board.board[i][j] != 0 and players_cells[i * GAME_SIZE + j].image != button.button_cell_hit:
+               players_cells[i * GAME_SIZE + j].image = button.button_selected_cell_surface
+    if not firs_turn:
+        coord = bot.choose_shot_random()
+        shot = player_board.shoot(coord)
+        players_cells[coord[0] * GAME_SIZE + coord[1]].image = button.button_cell_miss if player_board.board[coord[0]][coord[1]] == 0 else button.button_cell_hit
+        while shot.succes:
+            coord = bot.choose_shot_random()
+            shot = player_board.shoot(coord)
+            players_cells[coord[0] * GAME_SIZE + coord[1]].image = button.button_cell_miss if player_board.board[coord[0]][coord[1]] == 0 else button.button_cell_hit
+
     main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
     x1_text = textbox.Text('x1', 'freesansbold.ttf', 35, (400, 190), screen)
     x2_text = textbox.Text('x2', 'freesansbold.ttf', 35, (400, 240), screen)
@@ -239,10 +268,9 @@ def battle_solo(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_i
     texts.extend(generate_int_text(player_board.ships_left(), True))
     texts.extend(generate_int_text(bot_board.ships_left(), False))
     buttons = []
-    my_board = generate_cells(500, 180)
-    opponents_board = generate_cells()
-    buttons.extend(my_board)
-    buttons.extend(opponents_board)
+    
+    buttons.extend(players_cells)
+    buttons.extend(opponent_cells)
     battle_view = screenviews.View(screen, background, buttons, texts)
     battle_view.run()
 

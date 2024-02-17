@@ -1,5 +1,4 @@
 import random
-import copy
 class Ship:
 
     def __init__(self, spaces : set):
@@ -44,8 +43,6 @@ class Game_info:
                         ship.spaces.add((i,j))
             self.ships.append(ship)
             
-
-    
     def shoot(self, position):
         self.shots.add(position)
         result = self.board[position[0]][position[1]]
@@ -55,7 +52,7 @@ class Game_info:
             return Shot(position, True, self.shots.issuperset(self.ships[result - 1].spaces))
     
     def over(self):
-        print(self.board)
+        #print(self.board)
         for ship in self.ships:
             if not self.shots.issuperset(ship.spaces):
                 return False
@@ -82,11 +79,11 @@ class Shot:
 
 class Bot:
     #algorithm for solo mod
-    def __init__(self, opposiotion_board : Game_info):
-        self.opposiotion_board = opposiotion_board
+    def __init__(self):#, opposiotion_board : Game_info):
+        #self.opposiotion_board = opposiotion_board
         self.options = set()
-        self.last_hit = None
-        self.successful_shots = []
+        #self.last_hit = None
+        #self.successful_shots = []
         for i in range(10):
             for j in range(10):
                 self.options.add((i, j))
@@ -151,9 +148,10 @@ def validate_dict_equivalence(board, dict):
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-    print(visited)
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]#,
+    #[0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ]
+    #print(visited)
     new_dict = {key:0 for key in dict.keys()}
 
     rows = len(board)
@@ -179,12 +177,81 @@ def validate_dict_equivalence(board, dict):
                 ship_size = dfs(i, j)
                 if ship_size == 0:
                     continue
+                if ship_size > 6:
+                    return False
                 new_dict[ship_size] += 1
                 counter += 1
     return new_dict == dict
 
 def validate(board, dict):
-    return validate_adjacency(board) & validate_dict_equivalence(board, dict)
+    return validate_adjacency(board) and validate_dict_equivalence(board, dict)
+
+def generate_board(ships : dict):
+    #print(ships)
+    board = [[0 for i in range(SIZE)] for j in range(SIZE)]
+    for size in sorted(list(ships.keys()), reverse = True):
+        placed = 0
+        while placed !=  ships[size]:
+            #print(size)
+            i = random.choice(range(SIZE))
+            j = random.choice(range(SIZE))
+            orientation = random.choice(range(2))
+            #board[i][j] = 1
+            #placed += 1
+            if orientation:   
+                if i + size <= SIZE:
+                    if all(map(lambda x: board[i + x][j] == 0, range(size))):
+                        #print("ver")
+                        for ic in range(size):
+                            board[i+ic][j] = 1
+                            
+                            #print(i+ic, j)
+                        #print(size)
+                        placed += 1
+                        #print(board)
+                elif j + size <= SIZE:
+                    if all(map(lambda x: board[i][j + x] == 0, range(size))):
+                        #print("hor")
+                        for jc in range(size):
+                            board[i][j+jc] = 1
+                        #print(size)  
+                        placed += 1
+                    #print(board)
+            else:
+                if j + size <= SIZE:
+                    if all(map(lambda x: board[i][j + x] == 0, range(size))):
+                        #print("hor")
+                        for jc in range(size):
+                            board[i][j+jc] = 1
+                            
+                            #print(i,j+jc)
+                        #print(size)
+                        placed += 1
+                elif i + size <= SIZE:
+                    if all(map(lambda x: board[i + x][j] == 0, range(size))):
+                        #print("ver")
+                        for ic in range(size):
+                            board[i+ic][j] = 1
+                            
+                            #print(i+ic, j)
+                        #print(size)
+                        placed += 1
+    #print(board)
+    if not validate(board, ships):
+        print("failed")
+        return generate_board(ships)
+    #print(board)
+    return Game_info(board)
+                
 
 def getship(place: Position):
     return place.ship
+
+
+# s = {1: 0, 2: 1, 3: 1, 4: 1, 5: 0, 6: 0}
+# i = generate_board(s)
+# print(i.board)
+# print(i.ships_left())
+# print(i.ships_left())
+# print(i.board)
+

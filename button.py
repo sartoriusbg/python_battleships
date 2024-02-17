@@ -11,6 +11,10 @@ button_cell_surface = pygame.image.load("cell.png")
 button_cell_surface = pygame.transform.scale(button_cell_surface, (30, 30))
 button_selected_cell_surface = pygame.image.load("selected_cell.png")
 button_selected_cell_surface = pygame.transform.scale(button_selected_cell_surface, (30, 30))
+button_cell_miss = pygame.image.load("miss.png")
+button_cell_miss = pygame.transform.scale(button_cell_miss, (30, 30))
+button_cell_hit = pygame.image.load("hit.webp")
+button_cell_hit = pygame.transform.scale(button_cell_hit, (30, 30))
 class Button():
 	def __init__(self, image, x_pos, y_pos, text_input = ""):
 		self.image = image
