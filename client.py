@@ -19,7 +19,7 @@
 
 import socket, pickle
 
-def send(shit, host = '25.57.111.138', port = 12345):
+def send(mess, host = '127.0.0.1', port = 12345):
     
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     #host = '127.0.0.1'  # localhost
@@ -28,7 +28,7 @@ def send(shit, host = '25.57.111.138', port = 12345):
     client_socket.connect((host, port))
 
     #message = "{}, {}".format(x, y)
-    message = pickle.dumps(shit)
+    message = pickle.dumps(mess)
     client_socket.send(message)
 
     data = client_socket.recv(1024).decode('utf-8')
@@ -36,5 +36,14 @@ def send(shit, host = '25.57.111.138', port = 12345):
 
     client_socket.close()
 
-send([[1, 0], [0, 1]])
-send((1, 1))
+
+def send_until_success(mess, host = '127.0.0.1', port = 12345):
+    failed = True
+    while failed:
+        try:
+            send(mess)
+            failed = False
+        except ConnectionRefusedError:
+            print("failed")
+
+

@@ -8,6 +8,8 @@ import picture
 import textinput
 import gamelogic
 import json
+import server
+import client
 
 GAME_SIZE = 10
 
@@ -34,20 +36,36 @@ button_confirm_board = button.Button(button.button_surface, 600, 460, "Confirm")
 button_confirm_your_ip = button.Button(button.button_surface, 400, 350, "Confirm")
 button_confirm_opponent_ip = button.Button(button.button_surface, 400, 350, "Confirm")
 
-def file_reader(info : str):
+def file_reader(info : str, p_ip = 0, o_ip = 0):
     dict_str, list_str = info.split("&&&")
     data_dict = {int(key): value for key, value in json.loads(dict_str).items()}
     data_list = json.loads(list_str)
     #print(data_dict)
     if gamelogic.validate(data_list, data_dict):
         p_info = gamelogic.Game_info(data_list)
-        b_info = gamelogic.generate_board(data_dict)
-        bot = gamelogic.Smart_bot(p_info)
-        battle_solo(p_info, b_info, bot, True)
+        if p_ip == 0 and o_ip == 0:
+            b_info = gamelogic.generate_board(data_dict)
+            bot = gamelogic.Smart_bot(p_info)
+            battle_solo(p_info, b_info, bot, True)
+        else:
+            if p_ip[len(p_ip) - 1] == '1':
+                p_info_list = p_ip.split(':')
+                opponent_board = server.start_server(p_info_list[0], int(p_info_list[1]))
+                o_info_list = o_ip.split(':')
+                client.send_until_success(data_list, o_info_list[0], int(o_info_list[1]))
+                print("1 ready")
+            else:
+                o_info_list = o_ip.split(':')
+                client.send_until_success(data_list, o_info_list[0], int(o_info_list[1]))
+                p_info_list = p_ip.split(':')
+                opponent_board = server.start_server(p_info_list[0], int(p_info_list[1]))
+                print("2 ready")
+            print("mp")
+            
     else:
-        place_ships()
+        place_ships(p_ip, o_ip)
 
-def prompt_file():
+def prompt_file(p_ip = 0, o_ip = 0):
     """Create a Tk file dialog and cleanup when finished"""
     top = tkinter.Tk()
     top.withdraw()  # hide window
@@ -55,17 +73,23 @@ def prompt_file():
     if file_name:
         with open(file_name, 'r') as file:
             file_contents = file.read()
-            file_reader(file_contents)
+            file_reader(file_contents, p_ip, o_ip)
     top.destroy()
     #print(file_name)
 
 def debug_print(text):
 	print(text)
 
-def place_ships():
-
+def place_ships(p_ip = 0, o_ip = 0):
+    print(p_ip)
+    print(o_ip)
+    button_place_manually.set_action(place_ships_manually)#, [p_ip, o_ip])
+    button_place_from_file.set_action(prompt_file, [p_ip, o_ip])
+    buttons = [button_place_from_file, button_place_manually, button_back_to_main]
+    if p_ip != 0 and o_ip != 0:
+        buttons.remove(button_place_manually)
     place_ships_text = textbox.Text('How do you want to place your ships?', 'freesansbold.ttf', 35, (400, 100), screen)
-    place_ships_view = screenviews.View(screen, background, [button_place_from_file, button_place_manually, button_back_to_main], [place_ships_text])
+    place_ships_view = screenviews.View(screen, background, buttons , [place_ships_text])
     place_ships_view.run()
 
 def multy():
@@ -189,25 +213,30 @@ def place_ships_manually(cells : list[button.Button] = [], selectors : list[butt
     place_ships_manually_view.run()
 
 def confirm_player_ip(view):
-    print(view.text_result)
-    multiplayer_other_ip(view.text_result)
+    #print(view.text_result)
+    multiplayer_other_ip(view.text_result[:len(view.text_result) - 1])
 
 def multiplayer_your_ip():
     main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
-    prompt_text_yours = textbox.Text("Your IP:", "freesansbold.ttf", 35, (400, 150), screen)
+    prompt_text_yours = textbox.Text("Your IP:port:player_number", "freesansbold.ttf", 35, (400, 150), screen)
     ip_input = textinput.Text_input('', 'freesansbold.ttf', 35, (400, 250), screen)
     text_picture = picture.Picture('textinput.webp', (600, 50), (100, 225), screen)
     multiplayer_view = screenviews.View(screen, background, [button_back_to_main, button_confirm_your_ip], [main_text, prompt_text_yours], [text_picture], ip_input)
     button_confirm_your_ip.set_action(confirm_player_ip, [multiplayer_view])
     multiplayer_view.run()
 
+def confirm_other_ip(view, p_ip):
+    #print(view.text_result)
+    place_ships(p_ip, view.text_result[:len(view.text_result) - 1])
+
 def multiplayer_other_ip(player_ip):
-    print(player_ip)
+    #print(player_ip)
     main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
-    prompt_text_yours = textbox.Text("Opponents IP:", "freesansbold.ttf", 35, (400, 150), screen)
+    prompt_text_yours = textbox.Text("Opponents IP:port:player_number", "freesansbold.ttf", 35, (400, 150), screen)
     ip_input = textinput.Text_input('', 'freesansbold.ttf', 35, (400, 250), screen)
     text_picture = picture.Picture('textinput.webp', (600, 50), (100, 225), screen)
     multiplayer_view = screenviews.View(screen, background, [button_back_to_main, button_confirm_opponent_ip], [main_text, prompt_text_yours], [text_picture], ip_input)
+    button_confirm_opponent_ip.set_action(confirm_other_ip, [multiplayer_view, player_ip])
     multiplayer_view.run()
 
 def generate_int_text(ships : dict, player):
@@ -309,8 +338,6 @@ def main_menu():
 button_solo.set_action(place_ships)
 button_multy.set_action(multiplayer_your_ip)
 button_quit.set_action(quit_game)
-button_place_manually.set_action(place_ships_manually)
-button_place_from_file.set_action(prompt_file)
 button_back_to_main.set_action(main_menu)
 button_back_to_place_ships.set_action(place_ships)
 
