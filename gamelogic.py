@@ -75,6 +75,9 @@ class Shot:
         self.position = position
         self.succes = succes
         self.lethal = lethal
+    
+    def get_neighbours(self):
+        return set([self.position + (1,0), self.position + (-1,0), self.position + (0,1), self.position + (0,-1)])
 
 
 class Bot:
@@ -92,7 +95,22 @@ class Bot:
         shot = random.choice(tuple(self.options))
         self.options.remove(shot)
         return shot
-        
+
+class Smart_bot(Bot):
+
+    def __init__(self, player_info : Game_info):
+        super().__init__()
+        self.info = player_info
+        self.last_hit = None
+
+    def shoot(self):
+        if not self.last_hit or self.last_hit.lethal:
+            return self.choose_shot_random()
+        else:
+            opt = self.options.intersection(self.last_hit.get_neighbours())
+            return random.choice(opt)
+
+
 def validate_adjacency(board):
 
     if not isinstance(board, list):

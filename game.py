@@ -232,16 +232,19 @@ def shoot(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_info, b
                 battle_solo(player_board, bot_board, bot, False, opponent_cells, player_cells)
 
 def battle_solo(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_info, bot : gamelogic.Bot, firs_turn = True, opponent_cells = [], players_cells = []):
-    # if player_board.over() or bot_board.over:
-    #     print("game over")
-    #     return
+    if player_board.over() or bot_board.over():
+        game_over(bot_board.over())
+        return
     if not opponent_cells:
         opponent_cells = generate_cells()
     if not players_cells:
         players_cells = generate_cells(500, 180)
     
     for cell in opponent_cells:
-        cell.set_action(det_shot, [player_board, bot_board, bot, False, cell, opponent_cells, players_cells])
+        if cell.image == button.button_cell_surface:
+            cell.set_action(det_shot, [player_board, bot_board, bot, False, cell, opponent_cells, players_cells])
+        else:
+            cell.set_action(battle_solo, [player_board, bot_board, bot, True, opponent_cells, players_cells])
     for cell in players_cells:
         cell.set_action(battle_solo, [player_board, bot_board, bot, True, opponent_cells, players_cells])
     for i in range(GAME_SIZE):
@@ -273,6 +276,15 @@ def battle_solo(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_i
     buttons.extend(opponent_cells)
     battle_view = screenviews.View(screen, background, buttons, texts)
     battle_view.run()
+
+def game_over(win):
+    main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
+    if win:
+        outcome = textbox.Text('You win!!!!!!', 'freesansbold.ttf', 70, (400, 150), screen)
+    else:
+        outcome = textbox.Text('You lose :(', 'freesansbold.ttf', 70, (400, 150), screen)
+    game_over_view = screenviews.View(screen, background, [button_back_to_main], [main_text, outcome])
+    game_over_view.run()
 
 def main_menu():
     main_menu_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 100), screen)
