@@ -7,6 +7,7 @@ import textbox
 import picture
 import textinput
 import gamelogic
+import json
 
 GAME_SIZE = 10
 
@@ -33,11 +34,26 @@ button_confirm_board = button.Button(button.button_surface, 600, 460, "Confirm")
 button_confirm_your_ip = button.Button(button.button_surface, 400, 350, "Confirm")
 button_confirm_opponent_ip = button.Button(button.button_surface, 400, 350, "Confirm")
 
+def file_reader(info : str):
+    dict_str, list_str = info.split("&&&")
+    data_dict = {int(key): value for key, value in json.loads(dict_str).items()}
+    data_list = json.loads(list_str)
+    print(data_dict)
+    if gamelogic.validate(data_list, data_dict):
+        game_info = gamelogic.Game_info(data_list)
+        battle_solo(game_info, game_info)
+    else:
+        place_ships()
+
 def prompt_file():
     """Create a Tk file dialog and cleanup when finished"""
     top = tkinter.Tk()
     top.withdraw()  # hide window
     file_name = tkinter.filedialog.askopenfilename(parent=top)
+    if file_name:
+        with open(file_name, 'r') as file:
+            file_contents = file.read()
+            file_reader(file_contents)
     top.destroy()
     print(file_name)
 
@@ -62,16 +78,21 @@ def confirm_board(cells : list[button.Button], selectors : list[button.Button]):
     for index, select in enumerate(selectors):
         if select.image == button.button_selected_cell_surface:
             ships[index % 6 + 1] = index // 6
-    print(ships)
+    #print(ships)
     board = []
     for row in range(10):
         rowlist = []
         board.append(rowlist)
         for col in range(10):
             rowlist.append(arr[row * 10 + col])
+    print(board)
     
+    #info.print_ships()
     if gamelogic.validate(board, ships):
-        battle_solo()
+        info = gamelogic.Game_info(board)
+        print(info.ships_left())
+        #info.print_ships()
+        battle_solo(info, info)
     else:
         place_ships_manually()
 
@@ -180,14 +201,49 @@ def multiplayer_other_ip(player_ip):
     multiplayer_view = screenviews.View(screen, background, [button_back_to_main, button_confirm_opponent_ip], [main_text, prompt_text_yours], [text_picture], ip_input)
     multiplayer_view.run()
 
-def battle_solo():#your_board, bot_board):
+def generate_int_text(ships : dict, player):
+    texts = []
+    for size in ships:
+        if player:
+            texts.append(textbox.Text(ships[size].__str__(), 'freesansbold.ttf', 35, (350, 190 + 50 * (size - 1)), screen))
+        else:
+            texts.append(textbox.Text(ships[size].__str__(), 'freesansbold.ttf', 35, (450, 190 + 50 * (size - 1)), screen))
+    return texts
+        
+matrix = [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 0, 0, 2, 0, 0, 3, 3, 0, 4],
+    [1, 0, 0, 2, 0, 0, 0, 0, 0, 4],
+    [0, 0, 0, 2, 0, 0, 0, 0, 0, 4],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 4],
+    [0, 0, 0, 0, 0, 0, 0, 5, 0, 0],
+    [6, 6, 6, 6, 6, 0, 0, 5, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 5, 0, 0],
+    [0, 0, 0, 0, 7, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+]
+
+p_board = gamelogic.Game_info(matrix)
+b_board = gamelogic.Game_info(matrix)
+
+def battle_solo(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_info):#your_board, bot_board):
     main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
+    x1_text = textbox.Text('x1', 'freesansbold.ttf', 35, (400, 190), screen)
+    x2_text = textbox.Text('x2', 'freesansbold.ttf', 35, (400, 240), screen)
+    x3_text = textbox.Text('x3', 'freesansbold.ttf', 35, (400, 290), screen)
+    x4_text = textbox.Text('x4', 'freesansbold.ttf', 35, (400, 340), screen)
+    x5_text = textbox.Text('x5', 'freesansbold.ttf', 35, (400, 390), screen)
+    x6_text = textbox.Text('x6', 'freesansbold.ttf', 35, (400, 440), screen)
+    texts = [main_text, x1_text, x2_text, x3_text, x4_text, x5_text, x6_text]
+    texts.extend(generate_int_text(player_board.ships_left(), True))
+    texts.extend(generate_int_text(bot_board.ships_left(), False))
     buttons = []
     my_board = generate_cells(500, 180)
     opponents_board = generate_cells()
     buttons.extend(my_board)
     buttons.extend(opponents_board)
-    battle_view = screenviews.View(screen, background, buttons, [main_text])
+    battle_view = screenviews.View(screen, background, buttons, texts)
     battle_view.run()
 
 def main_menu():

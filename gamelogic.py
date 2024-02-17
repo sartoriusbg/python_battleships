@@ -2,14 +2,14 @@ import random
 import copy
 class Ship:
 
-    def __init__(self, spaces):
-        #spaces is list of coordinates of places where the ship is
+    def __init__(self, spaces : set):
+        #spaces is set of coordinates of places where the ship is
         self.spaces = spaces
 
 
 class Position:
     #holds the information abaout a position on the board
-    NO_SHIP = -1
+    NO_SHIP = 0
     def __init__(self, ship, is_shot):
         #ship is the position of a ship in the list of ships, if there is no ship on the position ship = -1
         self.ship = ship
@@ -21,47 +21,56 @@ def check_board(board, ships):
     pass
 
 
-# class Game_info:
-#     #holds the information of a gamestate
+class Game_info:
+    #holds the information of a gamestate
+    def __init__(self, board):
+        self.board = board
+        max_ship = 1
+        self.shots = set()
+        self.ships = []
+        for row in self.board:
+            for cell in row:
+                max_ship = max(cell, max_ship)
+        self.ships = []
+        #print(self.board)
+        #print(max_ship)
+        for number in range(max_ship + 1):
+            if number == 0:
+                continue
+            ship = Ship(set())
+            for i in range(SIZE):
+                for j in range(SIZE):
+                    if number == self.board[i][j]:
+                        ship.spaces.add((i,j))
+            self.ships.append(ship)
+            
 
-#     def __init__(self, size, ships:list):
-#         self.size = size
-#         self.ships = ships
-#         self.board = []
-#         for row in range(size):
-#             self.board.append([])
-#             for _ in range(size):
-#                 self.board[row].append(Position( Position.NO_SHIP, False))
+    
+    def shoot(self, position):
+        self.shots.add(position)
+        result = self.board[position[0]][position[1]]
+        if result == 0:
+            return Shot(position, False, False)
+        else:
+            return Shot(position, True, self.shots.issuperset(self.ships[result - 1].spaces))
+    
+    def over(self):
+        print(self.board)
+        for ship in self.ships:
+            if not self.shots.issuperset(ship.spaces):
+                return False
+        return True
+    
+    def ships_left(self):
+        ships = dict.fromkeys([1, 2, 3, 4, 5, 6])
+        for size in ships:
+            ships[size] = 0
+        for ship in self.ships:
+            if not self.shots.issuperset(ship.spaces):
+                ships[len(ship.spaces)] += 1
+        return ships
 
-#         for ship in enumerate(ships):
-#             for place in ship[1].spaces:
-#                 self.board[place[0]][place[1]].ship = ship[0]
-    
-#     def get_ship(self, place: Position):
-#         return place.ship
-    
-#     def get_shot(self,place: Position):
-#         if place.is_shot:
-#             return place.ship
-#         else:
-#             return "?"
 
-#     def print_player_board(self):
-#         for row in self.board:
-#             list_row = list(map(self._get_ship, row))
-#             print(list_row)
-    
-#     def print_oponent_board(self):
-#         for row in self.board:
-#             list_row = list(map(self._get_shot, row))
-#             print(list_row)
-    
-#     def game_over(self):
-#         for ship in self.ships:
-#             for position in ship.spaces:
-#                 if not position.is_shot:
-#                     return False
-#         return True
 
 class Shot:
 
@@ -71,44 +80,21 @@ class Shot:
         self.lethal = lethal
 
 
-# class Bot:
-#     #algorithm for solo mod
-#     def __init__(self, opposiotion_board : Game_info):
-#         self.opposiotion_board = opposiotion_board
-#         self.options = set()
-#         self.last_hit = None
-#         for i in range(10):
-#             for j in range(10):
-#                 self.options.add((i, j))
+class Bot:
+    #algorithm for solo mod
+    def __init__(self, opposiotion_board : Game_info):
+        self.opposiotion_board = opposiotion_board
+        self.options = set()
+        self.last_hit = None
+        self.successful_shots = []
+        for i in range(10):
+            for j in range(10):
+                self.options.add((i, j))
         
-        
-#     def _choose_shot_random(self):
-#         return random.choice(tuple(self.options))
-        
-
-#     def _choose_shot_neighbour(self):
-#         if self.last_hit.lethal:
-#             return self._choose_shot_random()
-#         else:
-#             if self.opposiotion_board._get_shot(self.last_hit.position + (1, 0)) == '?':
-#                 return self.last_hit.position + (1,0)
-#             if self.opposiotion_board._get_shot(self.last_hit.position + (-1, 0)) == '?':
-#                 return self.last_hit.position + (-1,0)
-#             if self.opposiotion_board._get_shot(self.last_hit.position + (0, -1)) == '?':
-#                 return self.last_hit.position + (0, -1)
-#             if self.opposiotion_board._get_shot(self.last_hit.position + (0, 1)) == '?':
-#                 return self.last_hit.position + (0, 1)
-        
-
-
-#     def action(self, last_shot:Shot):
-#         #last_hit contains the info about the last succesful Shot (position and if it was fatal)
-#         if last_shot.succes():
-#             self.last_hit = last_shot
-#         if not self.last_hit:
-#             return self._choose_shot_random()
-#         else:
-#             return self._choose_shot_neighbour()
+    def choose_shot_random(self):
+        shot = random.choice(tuple(self.options))
+        self.options.remove(shot)
+        return shot
         
 def validate_adjacency(board):
 
