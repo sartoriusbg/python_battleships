@@ -40,8 +40,10 @@ def file_reader(info : str):
     data_list = json.loads(list_str)
     #print(data_dict)
     if gamelogic.validate(data_list, data_dict):
-        game_info = gamelogic.Game_info(data_list)
-        battle_solo(game_info, game_info)
+        p_info = gamelogic.Game_info(data_list)
+        b_info = gamelogic.generate_board(data_dict)
+        bot = gamelogic.Smart_bot(p_info)
+        battle_solo(p_info, b_info, bot, True)
     else:
         place_ships()
 
@@ -96,7 +98,7 @@ def confirm_board(cells : list[button.Button], selectors : list[button.Button]):
         print(ships)
         #b_info = gamelogic.generate_board(ships)
         #print(board)
-        bot = gamelogic.Bot()
+        bot = gamelogic.Smart_bot(p_info)
         print(b_info.board)
         print("info")
         battle_solo(p_info, b_info, bot)
@@ -231,7 +233,7 @@ def shoot(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_info, b
             else:
                 battle_solo(player_board, bot_board, bot, False, opponent_cells, player_cells)
 
-def battle_solo(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_info, bot : gamelogic.Bot, firs_turn = True, opponent_cells = [], players_cells = []):
+def battle_solo(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_info, bot : gamelogic.Smart_bot, firs_turn = True, opponent_cells = [], players_cells = []):
     if player_board.over() or bot_board.over():
         game_over(bot_board.over())
         return
@@ -252,12 +254,16 @@ def battle_solo(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_i
             if player_board.board[i][j] != 0 and players_cells[i * GAME_SIZE + j].image != button.button_cell_hit:
                players_cells[i * GAME_SIZE + j].image = button.button_selected_cell_surface
     if not firs_turn:
-        coord = bot.choose_shot_random()
+        coord = bot.shoot()
         shot = player_board.shoot(coord)
+        if shot.succes:
+            bot.last_hit = shot
         players_cells[coord[0] * GAME_SIZE + coord[1]].image = button.button_cell_miss if player_board.board[coord[0]][coord[1]] == 0 else button.button_cell_hit
         while shot.succes:
-            coord = bot.choose_shot_random()
+            coord = bot.shoot()
             shot = player_board.shoot(coord)
+            if shot.succes:
+                bot.last_hit = shot
             players_cells[coord[0] * GAME_SIZE + coord[1]].image = button.button_cell_miss if player_board.board[coord[0]][coord[1]] == 0 else button.button_cell_hit
 
     main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
@@ -276,6 +282,15 @@ def battle_solo(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_i
     buttons.extend(opponent_cells)
     battle_view = screenviews.View(screen, background, buttons, texts)
     battle_view.run()
+
+# def battle_multy():
+#     main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
+#     x1_text = textbox.Text('x1', 'freesansbold.ttf', 35, (400, 190), screen)
+#     x2_text = textbox.Text('x2', 'freesansbold.ttf', 35, (400, 240), screen)
+#     x3_text = textbox.Text('x3', 'freesansbold.ttf', 35, (400, 290), screen)
+#     x4_text = textbox.Text('x4', 'freesansbold.ttf', 35, (400, 340), screen)
+#     x5_text = textbox.Text('x5', 'freesansbold.ttf', 35, (400, 390), screen)
+#     x6_text = textbox.Text('x6', 'freesansbold.ttf', 35, (400, 440), screen)
 
 def game_over(win):
     main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)

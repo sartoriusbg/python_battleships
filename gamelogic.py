@@ -77,7 +77,7 @@ class Shot:
         self.lethal = lethal
     
     def get_neighbours(self):
-        return set([self.position + (1,0), self.position + (-1,0), self.position + (0,1), self.position + (0,-1)])
+        return set([(self.position[0] + 1, self.position[1]), (self.position[0]-1, self.position[1]), (self.position[0], self.position[1] + 1), self.position + (self.position[0], self.position[1] - 1)])
 
 
 class Bot:
@@ -104,11 +104,21 @@ class Smart_bot(Bot):
         self.last_hit = None
 
     def shoot(self):
+        
         if not self.last_hit or self.last_hit.lethal:
             return self.choose_shot_random()
         else:
+            print(self.last_hit.position)
+            print(self.last_hit.lethal)
+            print(self.last_hit.get_neighbours())
             opt = self.options.intersection(self.last_hit.get_neighbours())
-            return random.choice(opt)
+            print(opt)
+            if opt:
+                shot = random.choice(list(opt))
+                self.options.remove(shot)
+                return shot
+            else:
+                return self.choose_shot_random()
 
 
 def validate_adjacency(board):
