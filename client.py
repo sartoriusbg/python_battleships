@@ -41,7 +41,7 @@ def send_until_success(mess, host = '127.0.0.1', port = 12345):
     failed = True
     while failed:
         try:
-            send(mess)
+            send(mess, host, port)
             failed = False
         except ConnectionRefusedError:
             print("failed")

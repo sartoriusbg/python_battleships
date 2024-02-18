@@ -1,5 +1,7 @@
 import server
 import client
+import time
 
-client.send_until_success("hi")
-server.start_server()
+
+server.start_server('25.57.111.138', 12345)
+
