@@ -54,13 +54,17 @@ def file_reader(info : str, p_ip = 0, o_ip = 0):
                 o_info_list = o_ip.split(':')
                 client.send_until_success(data_list, o_info_list[0], int(o_info_list[1]))
                 print("1 ready")
+                o_info = gamelogic.Game_info(opponent_board)
+                battle_multy(p_info, o_info, p_ip, o_ip, True)
             else:
                 o_info_list = o_ip.split(':')
                 client.send_until_success(data_list, o_info_list[0], int(o_info_list[1]))
                 p_info_list = p_ip.split(':')
                 opponent_board = server.start_server(p_info_list[0], int(p_info_list[1]))
                 print("2 ready")
-            print("mp")
+                o_info = gamelogic.Game_info(opponent_board)
+                battle_multy(p_info, o_info, p_ip, o_ip, False)
+            
             
     else:
         place_ships(p_ip, o_ip)
@@ -294,6 +298,7 @@ def battle_solo(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_i
             if shot.succes:
                 bot.last_hit = shot
             players_cells[coord[0] * GAME_SIZE + coord[1]].image = button.button_cell_miss if player_board.board[coord[0]][coord[1]] == 0 else button.button_cell_hit
+        
 
     main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
     x1_text = textbox.Text('x1', 'freesansbold.ttf', 35, (400, 190), screen)
@@ -312,15 +317,72 @@ def battle_solo(player_board : gamelogic.Game_info, bot_board : gamelogic.Game_i
     battle_view = screenviews.View(screen, background, buttons, texts)
     battle_view.run()
 
-# def battle_multy():
-#     main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
-#     x1_text = textbox.Text('x1', 'freesansbold.ttf', 35, (400, 190), screen)
-#     x2_text = textbox.Text('x2', 'freesansbold.ttf', 35, (400, 240), screen)
-#     x3_text = textbox.Text('x3', 'freesansbold.ttf', 35, (400, 290), screen)
-#     x4_text = textbox.Text('x4', 'freesansbold.ttf', 35, (400, 340), screen)
-#     x5_text = textbox.Text('x5', 'freesansbold.ttf', 35, (400, 390), screen)
-#     x6_text = textbox.Text('x6', 'freesansbold.ttf', 35, (400, 440), screen)
+def det_shot_multy(player_board : gamelogic.Game_info, opponent_board : gamelogic.Game_info, p_ip, o_ip, cell, players_turn = True, opponent_cells = [], players_cells = []):
+    cell.image = button.button_selected_cell_surface
+    shoot_multy(player_board, opponent_board, p_ip, o_ip, players_turn, opponent_cells, players_cells)
 
+def shoot_multy(player_board : gamelogic.Game_info, opponent_board : gamelogic.Game_info, p_ip, o_ip, players_turn = True, opponent_cells = [], players_cells = []):
+    o_info_list = o_ip.split(':')
+    for number, cell in enumerate(opponent_cells):
+        if cell.image == button.button_selected_cell_surface:
+            shot = opponent_board.shoot((number // GAME_SIZE, number % GAME_SIZE))
+            cell.image = button.button_cell_miss if opponent_board.board[number // GAME_SIZE][number % GAME_SIZE] == 0 else button.button_cell_hit
+            client.send_until_success((number // GAME_SIZE, number % GAME_SIZE), o_info_list[0], int(o_info_list[1]))
+            if shot.succes:
+                battle_multy(player_board, opponent_board, p_ip, o_ip, True, opponent_cells, players_cells)
+            else:
+                battle_multy(player_board, opponent_board, p_ip, o_ip, False, opponent_cells, players_cells)
+
+def battle_multy(player_board : gamelogic.Game_info, opponent_board : gamelogic.Game_info, p_ip, o_ip, players_turn = True, opponent_cells = [], players_cells = []):
+    if players_turn:
+        print("your turn")
+    else:
+        print("opponents turn")
+    if player_board.over() or opponent_board.over():
+        game_over(opponent_board.over())
+        return
+    if not opponent_cells:
+        opponent_cells = generate_cells()
+    if not players_cells:
+        players_cells = generate_cells(500, 180)
+    for cell in opponent_cells:
+        if cell.image == button.button_cell_surface:
+            cell.set_action(det_shot_multy, [player_board, opponent_board, p_ip, o_ip, cell, False, opponent_cells, players_cells])
+        else:
+            cell.set_action(battle_solo, [player_board, opponent_board, p_ip, o_ip, True, opponent_cells, players_cells])
+    for cell in players_cells:
+        cell.set_action(battle_solo, [player_board, opponent_board, p_ip, o_ip, True, opponent_cells, players_cells])
+    for i in range(GAME_SIZE):
+        for j in range(GAME_SIZE):
+            if player_board.board[i][j] != 0 and players_cells[i * GAME_SIZE + j].image != button.button_cell_hit:
+               players_cells[i * GAME_SIZE + j].image = button.button_selected_cell_surface
+    
+    if not players_turn:
+        p_info_list = p_info_list = p_ip.split(':')
+        coord = server.start_server(p_info_list[0], int(p_info_list[1]))
+        shot = player_board.shoot(coord)
+        players_cells[coord[0] * GAME_SIZE + coord[1]].image = button.button_cell_miss if player_board.board[coord[0]][coord[1]] == 0 else button.button_cell_hit
+        while shot.succes:
+            coord = server.start_server(p_info_list[0], int(p_info_list[1]))
+            shot = player_board.shoot(coord)
+            players_cells[coord[0] * GAME_SIZE + coord[1]].image = button.button_cell_miss if player_board.board[coord[0]][coord[1]] == 0 else button.button_cell_hit
+        
+    main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
+    x1_text = textbox.Text('x1', 'freesansbold.ttf', 35, (400, 190), screen)
+    x2_text = textbox.Text('x2', 'freesansbold.ttf', 35, (400, 240), screen)
+    x3_text = textbox.Text('x3', 'freesansbold.ttf', 35, (400, 290), screen)
+    x4_text = textbox.Text('x4', 'freesansbold.ttf', 35, (400, 340), screen)
+    x5_text = textbox.Text('x5', 'freesansbold.ttf', 35, (400, 390), screen)
+    x6_text = textbox.Text('x6', 'freesansbold.ttf', 35, (400, 440), screen)
+    texts = [main_text, x1_text, x2_text, x3_text, x4_text, x5_text, x6_text]
+    texts.extend(generate_int_text(player_board.ships_left(), True))
+    texts.extend(generate_int_text(opponent_board.ships_left(), False))
+    buttons = []
+    
+    buttons.extend(players_cells)
+    buttons.extend(opponent_cells)
+    battle_view = screenviews.View(screen, background, buttons, texts)
+    battle_view.run()
 def game_over(win):
     main_text = textbox.Text('Battleships', 'freesansbold.ttf', 70, (400, 50), screen)
     if win:
